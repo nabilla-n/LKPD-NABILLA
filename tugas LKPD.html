@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LKPD JavaScript - Laut Biru Interaktif</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(180deg, #020024 0%, #090979 35%, #00d4ff 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+            padding-bottom: 50px;
+        }
+
+        /* Header / Identitas Siswa */
+        header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            font-size: 2rem;
+            text-shadow: 0 0 10px #00d4ff;
+            margin-bottom: 10px;
+        }
+
+        .identity-box {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            font-size: 1.1rem;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 10px 20px;
+            border-radius: 20px;
+            max-width: 850px;
+            margin: 0 auto;
+        }
+
+        .container {
+            max-width: 950px;
+            margin: 0 auto;
+            padding: 0 20px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .card h2 {
+            color: #79eaff;
+            border-bottom: 2px solid #00d4ff;
+            padding-bottom: 8px;
+            margin-bottom: 15px;
+            font-size: 1.4rem;
+        }
+
+        /* Container Tampilan Ganda (Code Editor + Browser) */
+        .preview-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 15px 0;
+        }
+
+        @media (max-width: 768px) {
+            .preview-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Styling Code Editor Dark Theme (Gaya Acode / VS Code) */
+        .code-editor {
+            background: #121212;
+            border-radius: 10px;
+            border: 1px solid #333;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            font-family: 'Consolas', 'Courier New', monospace;
+        }
+
+        .editor-tab {
+            background: #1e1e1e;
+            color: #aaa;
+            padding: 8px 15px;
+            font-size: 0.85rem;
+            border-bottom: 1px solid #333;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .editor-tab span.file-icon {
+            color: #e34c26;
+            font-weight: bold;
+        }
+
+        .code-content {
+            padding: 15px;
+            color: #d4d4d4;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            white-space: pre;
+            overflow-x: auto;
+        }
+
+        /* Syntax Highlighting */
+        .kwd { color: #569cd6; } /* keyword: let, const, function */
+        .tag { color: #569cd6; } /* html tag */
+        .str { color: #ce9178; } /* string */
+        .num { color: #b5cea8; } /* number */
+        .com { color: #6a9955; } /* comment */
+        .fn  { color: #dcdcaa; } /* function/method */
+
+        /* Styling Preview Browser (Tampilan Hasil) */
+        .browser-box {
+            background: #202124;
+            border-radius: 10px;
+            border: 1px solid #333;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+
+        .browser-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #2d2d2d;
+            padding: 8px 12px;
+            font-size: 0.8rem;
+            color: #ccc;
+        }
+
+        .browser-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .dot-red { background: #ff5f56; }
+        .dot-yellow { background: #ffbd2e; }
+        .dot-green { background: #27c93f; }
+
+        .browser-content {
+            background: #ffffff;
+            color: #000000;
+            padding: 20px;
+            min-height: 180px;
+            font-family: Arial, sans-serif;
+        }
+
+        .browser-content h3 {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            color: #000;
+        }
+
+        .browser-content p {
+            font-size: 0.95rem;
+            color: #000;
+            line-height: 1.5;
+        }
+
+        /* Table Styling */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        th {
+            background: rgba(0, 212, 255, 0.3);
+            color: #fff;
+        }
+
+        /* Forms and Inputs */
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0 15px 0;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #000;
+            font-size: 1rem;
+        }
+
+        button {
+            background: linear-gradient(45deg, #00d4ff, #0056b3);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1rem;
+            transition: transform 0.2s, background 0.3s;
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.4);
+        }
+
+        button:hover {
+            transform: scale(1.05);
+            background: linear-gradient(45deg, #0056b3, #00d4ff);
+        }
+
+        .output-box {
+            background: rgba(0, 0, 0, 0.4);
+            border-left: 4px solid #00d4ff;
+            padding: 12px;
+            margin-top: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            line-height: 1.5;
+        }
+
+        /* Ocean Background Animation */
+        .ocean {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        .fish {
+            position: absolute;
+            font-size: 2rem;
+            animation: swim linear infinite;
+        }
+
+        @keyframes swim {
+            0% { transform: translateX(-100px) scaleX(1); }
+            50% { transform: translateX(100vw) scaleX(1); }
+            51% { transform: translateX(100vw) scaleX(-1); }
+            100% { transform: translateX(-100px) scaleX(-1); }
+        }
+
+        .bubble {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            animation: rise linear infinite;
+        }
+
+        @keyframes rise {
+            0% { bottom: -10px; opacity: 0; }
+            50% { opacity: 0.8; }
+            100% { bottom: 100vh; opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Animasi Laut & Ikan -->
+    <div class="ocean">
+        <div class="fish" style="top: 15%; animation-duration: 15s;">🐠</div>
+        <div class="fish" style="top: 40%; animation-duration: 22s; animation-delay: -5s;">🐟</div>
+        <div class="fish" style="top: 65%; animation-duration: 18s; animation-delay: -10s;">🐡</div>
+        <div class="fish" style="top: 80%; animation-duration: 12s; animation-delay: -2s;">🦈</div>
+        <div class="fish" style="top: 30%; animation-duration: 25s; animation-delay: -12s;">🪼</div>
+
+        <div class="bubble" style="left: 10%; width: 15px; height: 15px; animation-duration: 8s;"></div>
+        <div class="bubble" style="left: 35%; width: 25px; height: 25px; animation-duration: 12s;"></div>
+        <div class="bubble" style="left: 55%; width: 10px; height: 10px; animation-duration: 6s;"></div>
+        <div class="bubble" style="left: 75%; width: 20px; height: 20px; animation-duration: 10s;"></div>
+        <div class="bubble" style="left: 90%; width: 12px; height: 12px; animation-duration: 7s;"></div>
+    </div>
+
+    <!-- Header Identitas -->
+    <header>
+        <h1>LKPD JAVASCRIPT: INPUT, OUTPUT & OPERATOR</h1>
+        <div class="identity-box">
+            <span><strong>Nama:</strong> Nabilla Permata Ababil & Rahma Meriana Putri</span>
+            <span><strong>Kelas:</strong> X PPLG 1</span>
+            <span><strong>Tanggal:</strong> 23 September 2026</span>
+        </div>
+    </header>
+
+    <div class="container">
+
+        <!-- Aktivitas 1 -->
+        <div class="card">
+            <h2>Aktivitas 1 - Prediksi</h2>
+            
+            <div class="preview-grid">
+                <!-- Editor Kode -->
+                <div class="code-editor">
+                    <div class="editor-tab"><span class="file-icon">&lt;&gt;</span> aktivitas 1.html</div>
+                    <div class="code-content"><span class="kwd">let</span> a = <span class="num">10</span>;
+<span class="kwd">let</span> b = <span class="num">5</span>;
+
+document.<span class="fn">write</span>(<span class="str">"a + b = "</span> + (a + b) + <span class="str">"&lt;br&gt;"</span>);
+document.<span class="fn">write</span>(<span class="str">"a - b = "</span> + (a - b) + <span class="str">"&lt;br&gt;"</span>);
+document.<span class="fn">write</span>(<span class="str">"a * b = "</span> + (a * b) + <span class="str">"&lt;br&gt;"</span>);
+document.<span class="fn">write</span>(<span class="str">"a / b = "</span> + (a / b) + <span class="str">"&lt;br&gt;"</span>);</div>
+                </div>
+                <!-- Browser Output -->
+                <div class="browser-box">
+                    <div class="browser-header">
+                        <span class="browser-dot dot-red"></span>
+                        <span class="browser-dot dot-yellow"></span>
+                        <span class="browser-dot dot-green"></span>
+                        <span>Hasil Browser - Aktivitas 1</span>
+                    </div>
+                    <div class="browser-content">
+                        <h3>Aktivitas 1</h3>
+                        <p>a + b = 15<br>a - b = 5<br>a * b = 50<br>a / b = 2</p>
+                    </div>
+                </div>
+            </div>
+
+            <table>
+                <tr>
+                    <th>Operasi</th>
+                    <th>Prediksi</th>
+                    <th>Hasil Sebenarnya</th>
+                </tr>
+                <tr>
+                    <td>a + b</td>
+                    <td><input type="text" value="15"></td>
+                    <td><button onclick="runAct1('add')">Cek</button> <span id="res1-add">= 15</span></td>
+                </tr>
+                <tr>
+                    <td>a - b</td>
+                    <td><input type="text" value="5"></td>
+                    <td><button onclick="runAct1('sub')">Cek</button> <span id="res1-sub">= 5</span></td>
+                </tr>
+                <tr>
+                    <td>a * b</td>
+                    <td><input type="text" value="50"></td>
+                    <td><button onclick="runAct1('mul')">Cek</button> <span id="res1-mul">= 50</span></td>
+                </tr>
+                <tr>
+                    <td>a / b</td>
+                    <td><input type="text" value="2"></td>
+                    <td><button onclick="runAct1('div')">Cek</button> <span id="res1-div">= 2</span></td>
+                </tr>
+            </table>
+            <label>Apakah prediksi kamu benar?</label>
+            <select>
+                <option value="ya" selected>Ya</option>
+                <option value="sebagian">Sebagian</option>
+                <option value="tidak">Tidak</option>
+            </select>
+            <label>Mengapa?</label>
+            <textarea placeholder="Alasan...">Karena operasi aritmatika dasar di JavaScript bekerja sesuai dengan perhitungan matematika umum.</textarea>
+        </div>
+
+        <!-- Aktivitas 2 (Persis Gambar Pengguna) -->
+        <div class="card">
+            <h2>Aktivitas 2 - Eksperimen</h2>
+            
+            <div class="preview-grid">
+                <!-- Editor Kode (Visual Seperti Gambar Pengguna) -->
+                <div class="code-editor">
+                    <div class="editor-tab"><span class="file-icon">&lt;&gt;</span> aktivitas 2.html</div>
+                    <div class="code-content"><span class="kwd">&lt;!DOCTYPE html&gt;</span>
+<span class="tag">&lt;html lang="id"&gt;</span>
+<span class="tag">&lt;head&gt;</span>
+    <span class="tag">&lt;title&gt;</span>Aktivitas 2<span class="tag">&lt;/title&gt;</span>
+<span class="tag">&lt;/head&gt;</span>
+<span class="tag">&lt;body&gt;</span>
+    <span class="tag">&lt;h2&gt;</span>Aktivitas 2 - Eksperimen<span class="tag">&lt;/h2&gt;</span>
+    <span class="tag">&lt;p id="hasil"&gt;&lt;/p&gt;</span>
+
+    <span class="tag">&lt;script&gt;</span>
+        <span class="kwd">let</span> a = <span class="num">20</span>;
+        <span class="kwd">let</span> b = <span class="num">4</span>;
+
+        <span class="kwd">let</span> hasil = `
+            a + b = ${a + b}&lt;br&gt;
+            a - b = ${a - b}&lt;br&gt;
+            a * b = ${a * b}&lt;br&gt;
+            a / b = ${a / b}&lt;br&gt;
+            a % b = ${a % b}&lt;br&gt;
+        `;
+
+        document.<span class="fn">getElementById</span>(<span class="str">"hasil"</span>).innerHTML = hasil;
+        console.<span class="fn">log</span>(a + b);
+        console.<span class="fn">log</span>(a - b);
+    <span class="tag">&lt;/script&gt;</span>
+<span class="tag">&lt;/body&gt;</span>
+<span class="tag">&lt;/html&gt;</span></div>
+                </div>
+
+                <!-- Browser Output -->
+                <div class="browser-box">
+                    <div class="browser-header">
+                        <span class="browser-dot dot-red"></span>
+                        <span class="browser-dot dot-yellow"></span>
+                        <span class="browser-dot dot-green"></span>
+                        <span>Hasil Browser - Aktivitas 2</span>
+                    </div>
+                    <div class="browser-content">
+                        <h3>Aktivitas 2 - Eksperimen</h3>
+                        <p id="pic-out2">a + b = 24<br>a - b = 16<br>a * b = 80<br>a / b = 5<br>a % b = 0</p>
+                    </div>
+                </div>
+            </div>
+
+            <br>
+            <button onclick="runAct2()">Jalankan Aktivitas 2</button>
+            <div id="out2" class="output-box">a + b = 24
+a - b = 16
+a * b = 80
+a / b = 5
+a % b = 0</div>
+            <br>
+            <label>Apa yang kamu temukan?</label>
+            <textarea placeholder="Temuan kamu...">Operator % (Modulus) digunakan untuk mencari sisa hasil bagi. Karena 20 habis dibagi 4, hasilnya adalah 0.</textarea>
+        </div>
+
+        <!-- Aktivitas 3 -->
+        <div class="card">
+            <h2>Aktivitas 3 - Input dengan prompt()</h2>
+            
+            <div class="preview-grid">
+                <div class="code-editor">
+                    <div class="editor-tab"><span class="file-icon">&lt;&gt;</span> aktivitas 3.html</div>
+                    <div class="code-content"><span class="kwd">let</span> nama = <span class="fn">prompt</span>(<span class="str">"Masukkan nama:"</span>, <span class="str">"Nabilla"</span>);
+console.<span class="fn">log</span>(nama);
+
+<span class="kwd">let</span> umur = <span class="fn">prompt</span>(<span class="str">"Masukkan umur:"</span>, <span class="str">"16"</span>);
+console.<span class="fn">log</span>(umur);
+
+document.<span class="fn">write</span>(nama + <span class="str">"&lt;br&gt;"</span>);
+document.<span class="fn">write</span>(umur + <span class="str">"&lt;br&gt;"</span>);</div>
+                </div>
+                <div class="browser-box">
+                    <div class="browser-header">
+                        <span class="browser-dot dot-red"></span>
+                        <span class="browser-dot dot-yellow"></span>
+                        <span class="browser-dot dot-green"></span>
+                        <span>Hasil Browser - Aktivitas 3</span>
+                    </div>
+                    <div class="browser-content">
+                        <h3>Aktivitas 3</h3>
+                        <p id="pic-out3">Nabilla & Rahma<br>16</p>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="runAct3()">Jalankan Aktivitas 3</button>
+            <div id="out3" class="output-box">Nama: Nabilla & Rahma
+Umur: 16</div>
+            <br>
+            <label><strong>Apa fungsi prompt()?</strong></label>
+            <textarea placeholder="Jawaban...">Fungsi prompt() digunakan untuk menerima input teks dari pengguna melalui jendela pop-up interaktif.</textarea>
+        </div>
+
+        <!-- Aktivitas 4 -->
+        <div class="card">
+            <h2>Aktivitas 4 - Menghitung Umur</h2>
+            
+            <div class="preview-grid">
+                <div class="code-editor">
+                    <div class="editor-tab"><span class="file-icon">&lt;&gt;</span> aktivitas 4.html</div>
+                    <div class="code-content"><span class="kwd">let</span> tahunLahir = <span class="fn">prompt</span>(<span class="str">"Masukkan tahun lahir:"</span>, <span class="str">"2010"</span>);
+<span class="kwd">let</span> tahunSekarang = <span class="num">2026</span>;
+<span class="kwd">let</span> umurSekarang = tahunSekarang - tahunLahir;
+
+console.<span class="fn">log</span>(umurSekarang);
+document.<span class="fn">write</span>(umurSekarang + <span class="str">"&lt;br&gt;"</span>);</div>
+                </div>
+                <div class="browser-box">
+                    <div class="browser-header">
+                        <span class="browser-dot dot-red"></span>
+                        <span class="browser-dot dot-yellow"></span>
+                        <span class="browser-dot dot-green"></span>
+                        <span>Hasil Browser - Aktivitas 4</span>
+                    </div>
+                    <div class="browser-content">
+                        <h3>Aktivitas 4</h3>
+                        <p id="pic-out4">16</p>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="runAct4()">Jalankan Aktivitas 4</button>
+            <div id="out4" class="output-box">Tahun Lahir: 2010
+Tahun Sekarang: 2026
+Umur Kamu = 16 tahun</div>
+        </div>
+
+        <!-- Aktivitas 5 -->
+        <div class="card">
+            <h2>Aktivitas 5 - Mesin Kasir Mini</h2>
+            
+            <div class="preview-grid">
+                <div class="code-editor">
+                    <div class="editor-tab"><span class="file-icon">&lt;&gt;</span> aktivitas 5.html</div>
+                    <div class="code-content"><span class="kwd">let</span> harga = <span class="fn">prompt</span>(<span class="str">"Masukkan harga:"</span>, <span class="str">"5000"</span>);
+<span class="kwd">let</span> jumlah = <span class="fn">prompt</span>(<span class="str">"Masukkan jumlah:"</span>, <span class="str">"4"</span>);
+<span class="kwd">let</span> total = harga * jumlah;
+
+console.<span class="fn">log</span>(total);
+document.<span class="fn">write</span>(total + <span class="str">"&lt;br&gt;"</span>);</div>
+                </div>
+                <div class="browser-box">
+                    <div class="browser-header">
+                        <span class="browser-dot dot-red"></span>
+                        <span class="browser-dot dot-yellow"></span>
+                        <span class="browser-dot dot-green"></span>
+                        <span>Hasil Browser - Aktivitas 5</span>
+                    </div>
+                    <div class="browser-content">
+                        <h3>Aktivitas 5</h3>
+                        <p id="pic-out5">20000</p>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="runAct5()">Jalankan Aktivitas 5</button>
+            <div id="out5" class="output-box">Harga: Rp 5000
+Jumlah: 4
+Total = Rp 20000</div>
+        </div>
+
+        <!-- Aktivitas 6 -->
+        <div class="card">
+            <h2>Aktivitas 6 - Think Pair Share</h2>
+            
+            <p><strong>THINK:</strong> Mengapa membutuhkan variabel total?</p>
+            <textarea>Variabel total diperlukan untuk menyimpan hasil perkalian (harga * jumlah) agar nilainya tersimpan dan bisa digunakan atau ditampilkan kembali.</textarea>
+
+            <p><strong>PAIR:</strong> Jawaban sama?</p>
+            <select>
+                <option value="ya" selected>Ya</option>
+                <option value="tidak">Tidak</option>
+            </select>
+
+            <p><strong>SHARE:</strong> Kesimpulan Kelompok:</p>
+            <textarea>Variabel total mempermudah alur logika program agar data hasil perhitungan tersimpan dengan rapi sebelum dilakukan proses lanjutan (seperti diskon).</textarea>
+        </div>
+
+        <!-- Aktivitas 7 -->
+        <div class="card">
+            <h2>Aktivitas 7 - Challenge: Warung Digital</h2>
+            
+            <div class="preview-grid">
+                <div class="code-editor">
+                    <div class="editor-tab"><span class="file-icon">&lt;&gt;</span> aktivitas 7.html</div>
+                    <div class="code-content"><span class="kwd">let</span> makanan = <span class="fn">prompt</span>(<span class="str">"Nama makanan:"</span>, <span class="str">"Nasi Goreng"</span>);
+<span class="kwd">let</span> hargaMakanan = <span class="fn">prompt</span>(<span class="str">"Harga:"</span>, <span class="str">"15000"</span>);
+<span class="kwd">let</span> jumlahMakanan = <span class="fn">prompt</span>(<span class="str">"Jumlah:"</span>, <span class="str">"2"</span>);
+
+<span class="kwd">let</span> totalMakanan = hargaMakanan * jumlahMakanan;
+<span class="kwd">let</span> diskon = totalMakanan * <span class="num">10</span> / <span class="num">100</span>;
+<span class="kwd">let</span> bayar = totalMakanan - diskon;
+
+document.<span class="fn">write</span>(makanan + <span class="str">"&lt;br&gt;"</span> + bayar);</div>
+                </div>
+                <div class="browser-box">
+                    <div class="browser-header">
+                        <span class="browser-dot dot-red"></span>
+                        <span class="browser-dot dot-yellow"></span>
+                        <span class="browser-dot dot-green"></span>
+                        <span>Hasil Browser - Aktivitas 7</span>
+                    </div>
+                    <div class="browser-content">
+                        <h3>Aktivitas 7</h3>
+                        <p id="pic-out7">Nasi Goreng<br>15000<br>2<br>30000<br>3000<br>27000</p>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="runAct7()">Jalankan Aktivitas 7</button>
+            <div id="out7" class="output-box">--- NOTA WARUNG DIGITAL ---
+Makanan     : Nasi Goreng
+Harga       : Rp 15000
+Jumlah      : 2
+----------------------------
+Total       : Rp 30000
+Diskon (10%): Rp 3000
+Total Bayar : Rp 27000</div>
+        </div>
+
+        <!-- Aktivitas 8 -->
+        <div class="card">
+            <h2>Aktivitas 8 - Debugging</h2>
+            
+            <div class="preview-grid">
+                <div class="code-editor">
+                    <div class="editor-tab"><span class="file-icon">&lt;&gt;</span> aktivitas 8.html</div>
+                    <div class="code-content"><span class="com">// Perbaikan Nama Variabel tanpa Spasi</span>
+<span class="kwd">let</span> harga8 = <span class="num">5000</span>;
+<span class="kwd">let</span> jumlah8 = <span class="num">3</span>;
+<span class="kwd">let</span> totalHarga = harga8 * jumlah8;
+
+console.<span class="fn">log</span>(totalHarga);
+document.<span class="fn">write</span>(totalHarga);</div>
+                </div>
+                <div class="browser-box">
+                    <div class="browser-header">
+                        <span class="browser-dot dot-red"></span>
+                        <span class="browser-dot dot-yellow"></span>
+                        <span class="browser-dot dot-green"></span>
+                        <span>Hasil Browser - Aktivitas 8</span>
+                    </div>
+                    <div class="browser-content">
+                        <h3>Aktivitas 8</h3>
+                        <p id="pic-out8">15000</p>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="runAct8()">Jalankan Aktivitas 8</button>
+            <div id="out8" class="output-box">Hasil Perbaikan Debugging:
+Harga = 5000
+Jumlah = 3
+Total Harga = 15000</div>
+            <br>
+            <label><strong>Kesalahan:</strong></label>
+            <textarea>Nama variabel `total harga` salah karena menggunakan spasi, yang tidak diperbolehkan dalam penulisan variabel JavaScript.</textarea>
+        </div>
+
+        <!-- Aktivitas 9 -->
+        <div class="card">
+            <h2>Aktivitas 9 - Challenge Mandiri: Kalkulator Tabungan</h2>
+            
+            <div class="preview-grid">
+                <div class="code-editor">
+                    <div class="editor-tab"><span class="file-icon">&lt;&gt;</span> aktivitas 9.html</div>
+                    <div class="code-content"><span class="kwd">let</span> uangAwal = <span class="fn">prompt</span>(<span class="str">"Uang awal:"</span>, <span class="str">"50000"</span>);
+<span class="kwd">let</span> hari1 = <span class="fn">prompt</span>(<span class="str">"Hari 1:"</span>, <span class="str">"10000"</span>);
+<span class="kwd">let</span> hari2 = <span class="fn">prompt</span>(<span class="str">"Hari 2:"</span>, <span class="str">"15000"</span>);
+<span class="kwd">let</span> hari3 = <span class="fn">prompt</span>(<span class="str">"Hari 3:"</span>, <span class="str">"20000"</span>);
+
+<span class="kwd">let</span> total = <span class="fn">Number</span>(uangAwal) + <span class="fn">Number</span>(hari1) + <span class="fn">Number</span>(hari2) + <span class="fn">Number</span>(hari3);
+document.<span class="fn">write</span>(total);</div>
+                </div>
+                <div class="browser-box">
+                    <div class="browser-header">
+                        <span class="browser-dot dot-red"></span>
+                        <span class="browser-dot dot-yellow"></span>
+                        <span class="browser-dot dot-green"></span>
+                        <span>Hasil Browser - Aktivitas 9</span>
+                    </div>
+                    <div class="browser-content">
+                        <h3>Aktivitas 9</h3>
+                        <p id="pic-out9">95000</p>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="runAct9()">Jalankan Aktivitas 9</button>
+            <div id="out9" class="output-box">--- KALKULATOR TABUNGAN ---
+Uang Awal       : Rp 50000
+Hari Ke-1       : Rp 10000
+Hari Ke-2       : Rp 15000
+Hari Ke-3       : Rp 20000
+----------------------------
+Total Tabungan  = Rp 95000</div>
+        </div>
+
+        <!-- D. Asesmen Formatif -->
+        <div class="card">
+            <h2>D. Asesmen Formatif</h2>
+
+            <label><strong>1. Apa output dari <code>let a=8; let b=2; console.log(a+b);</code>?</strong></label>
+            <input type="text" value="10">
+
+            <label><strong>2. Apa output dari <code>let a=10; let b=3; console.log(a % b);</code>?</strong></label>
+            <input type="text" value="1">
+
+            <label><strong>3. Apa fungsi prompt()?</strong></label>
+            <input type="text" value="Menampilkan dialog interaktif untuk meminta pengguna memasukkan input data.">
+
+            <label><strong>4. Buat program menghitung luas persegi panjang (panjang 10, lebar 5):</strong></label>
+            <textarea style="font-family: monospace;">let panjang = 10;
+let lebar = 5;
+let luas = panjang * lebar;
+console.log("Luas persegi panjang = " + luas); // Output: 50</textarea>
+        </div>
+
+        <!-- E. Rubrik Penilaian -->
+        <div class="card">
+            <h2>E. Rubrik Penilaian (Self-Assessment)</h2>
+            <table>
+                <tr>
+                    <th>Aspek Penilaian</th>
+                    <th>Skor (1 - 4)</th>
+                </tr>
+                <tr>
+                    <td>Memahami input-output</td>
+                    <td><input type="number" min="1" max="4" value="4"></td>
+                </tr>
+                <tr>
+                    <td>Penggunaan variable</td>
+                    <td><input type="number" min="1" max="4" value="4"></td>
+                </tr>
+                <tr>
+                    <td>Penggunaan operator</td>
+                    <td><input type="number" min="1" max="4" value="4"></td>
+                </tr>
+                <tr>
+                    <td>Penggunaan prompt()</td>
+                    <td><input type="number" min="1" max="4" value="4"></td>
+                </tr>
+                <tr>
+                    <td>Ketepatan program</td>
+                    <td><input type="number" min="1" max="4" value="4"></td>
+                </tr>
+                <tr>
+                    <td>Debugging</td>
+                    <td><input type="number" min="1" max="4" value="4"></td>
+                </tr>
+                <tr>
+                    <td>Kemandirian</td>
+                    <td><input type="number" min="1" max="4" value="4"></td>
+                </tr>
+                <tr>
+                    <td>Kreativitas</td>
+                    <td><input type="number" min="1" max="4" value="4"></td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- F. Refleksi Pembelajaran Mendalam -->
+        <div class="card">
+            <h2>F. Refleksi Pembelajaran Mendalam</h2>
+
+            <label><strong>Berkesadaran:</strong> Hari ini saya menyadari bahwa...</label>
+            <textarea>Ketelitian dalam membuat sintaks program sangat penting, terutama pemilihan nama variabel dan konversi tipe data.</textarea>
+
+            <label><strong>Bermakna:</strong> Materi ini dapat digunakan untuk...</label>
+            <textarea>Membuat aplikasi interaktif seperti program perhitungan kasir digital, kalkulator, dan pengolahan form input web.</textarea>
+
+            <label><strong>Menggembirakan:</strong> Bagian pembelajaran yang paling saya sukai...</label>
+            <textarea>Saat mencoba eksperimen kode interaktif dan berhasil memecahkan tantangan program Warung Digital tanpa error.</textarea>
+        </div>
+
+        <!-- G. Exit Ticket -->
+        <div class="card">
+            <h2>G. Exit Ticket</h2>
+
+            <label><strong>1. Satu hal yang sudah saya kuasai:</strong></label>
+            <input type="text" value="Cara menggunakan operator aritmatika JavaScript dan mengambil nilai input pengguna dengan prompt().">
+
+            <label><strong>2. Satu hal yang masih membingungkan:</strong></label>
+            <input type="text" value="Mengubah data teks (string) hasil prompt() menjadi data angka (Number) pada operasi yang lebih kompleks.">
+
+            <label><strong>3. Satu hal yang ingin saya coba:</strong></label>
+            <input type="text" value="Membuat aplikasi kasir online berbasis web menggunakan tampilan form interaktif tanpa jendela pop-up prompt().">
+        </div>
+
+    </div>
+
+    <!-- Script JavaScript Interaktif Sesuai Foto & Pencegahan Null -->
+    <script>
+        // Aktivitas 1
+        function runAct1(op) {
+            let a1 = 10;
+            let b1 = 5;
+            let res = 0;
+            if(op === 'add') { res = a1 + b1; console.log("a + b = " + res); }
+            if(op === 'sub') { res = a1 - b1; console.log("a - b = " + res); }
+            if(op === 'mul') { res = a1 * b1; console.log("a * b = " + res); }
+            if(op === 'div') { res = a1 / b1; console.log("a / b = " + res); }
+            document.getElementById('res1-' + op).innerText = "= " + res;
+        }
+
+        // Aktivitas 2
+        function runAct2() {
+            let a2 = 20;
+            let b2 = 4;
+            
+            let hasil = `a + b = ${a2 + b2}\n` +
+                        `a - b = ${a2 - b2}\n` +
+                        `a * b = ${a2 * b2}\n` +
+                        `a / b = ${a2 / b2}\n` +
+                        `a % b = ${a2 % b2}`;
+
+            console.log(a2 + b2);
+            console.log(a2 - b2);
+            console.log(a2 * b2);
+            console.log(a2 / b2);
+            console.log(a2 % b2);
+
+            document.getElementById("out2").innerText = hasil;
+            document.getElementById("pic-out2").innerHTML = `a + b = ${a2 + b2}<br>a - b = ${a2 - b2}<br>a * b = ${a2 * b2}<br>a / b = ${a2 / b2}<br>a % b = ${a2 % b2}`;
+        }
+
+        // Aktivitas 3
+        function runAct3() {
+            let nama = prompt("Masukkan nama:", "Nabilla & Rahma");
+            if (!nama) nama = "Nabilla & Rahma";
+            console.log(nama);
+
+            let umur = prompt("Masukkan umur:", "16");
+            if (!umur) umur = "16";
+            console.log(umur);
+
+            document.getElementById('out3').innerText = `Nama: ${nama}\nUmur: ${umur}`;
+            document.getElementById('pic-out3').innerHTML = `${nama}<br>${umur}`;
+        }
+
+        // Aktivitas 4
+        function runAct4() {
+            let inputTahun = prompt("Masukkan tahun lahir:", "2010");
+            let tahunLahir = Number(inputTahun) || 2010;
+            let tahunSekarang = 2026;
+            let umurSekarang = tahunSekarang - tahunLahir;
+
+            console.log(umurSekarang);
+
+            document.getElementById('out4').innerText = `Tahun Lahir: ${tahunLahir}\nTahun Sekarang: ${tahunSekarang}\nUmur Kamu = ${umurSekarang} tahun`;
+            document.getElementById('pic-out4').innerText = umurSekarang;
+        }
+
+        // Aktivitas 5
+        function runAct5() {
+            let harga = Number(prompt("Masukkan harga:", "5000")) || 5000;
+            let jumlah = Number(prompt("Masukkan jumlah:", "4")) || 4;
+            let total = harga * jumlah;
+
+            console.log(total);
+
+            document.getElementById('out5').innerText = `Harga: Rp ${harga}\nJumlah: ${jumlah}\nTotal = Rp ${total}`;
+            document.getElementById('pic-out5').innerText = total;
+        }
+
+        // Aktivitas 7
+        function runAct7() {
+            let makanan = prompt("Nama makanan:", "Nasi Goreng") || "Nasi Goreng";
+            let hargaMakanan = Number(prompt("Harga:", "15000")) || 15000;
+            let jumlahMakanan = Number(prompt("Jumlah:", "2")) || 2;
+
+            let totalMakanan = hargaMakanan * jumlahMakanan;
+
+            console.log(makanan);
+            console.log(hargaMakanan);
+            console.log(jumlahMakanan);
+            console.log(totalMakanan);
+
+            let diskon = totalMakanan * 10 / 100;
+            let bayar = totalMakanan - diskon;
+
+            console.log(diskon);
+            console.log(bayar);
+
+            let output = `--- NOTA WARUNG DIGITAL ---\n` +
+                         `Makanan     : ${makanan}\n` +
+                         `Harga       : Rp ${hargaMakanan}\n` +
+                         `Jumlah      : ${jumlahMakanan}\n` +
+                         `----------------------------\n` +
+                         `Total       : Rp ${totalMakanan}\n` +
+                         `Diskon (10%): Rp ${diskon}\n` +
+                         `Total Bayar : Rp ${bayar}`;
+            
+            document.getElementById('out7').innerText = output;
+            document.getElementById('pic-out7').innerHTML = `${makanan}<br>${hargaMakanan}<br>${jumlahMakanan}<br>${totalMakanan}<br>${diskon}<br>${bayar}`;
+        }
+
+        // Aktivitas 8
+        function runAct8() {
+            let harga8 = 5000;
+            let jumlah8 = 3;
+            let totalHarga = harga8 * jumlah8;
+
+            console.log(totalHarga);
+
+            document.getElementById('out8').innerText = `Hasil Perbaikan Debugging:\nHarga = ${harga8}\nJumlah = ${jumlah8}\nTotal Harga = ${totalHarga}`;
+            document.getElementById('pic-out8').innerText = totalHarga;
+        }
+
+        // Aktivitas 9
+        function runAct9() {
+            let uangAwal = Number(prompt("Masukkan uang awal:", "50000")) || 50000;
+            let hari1 = Number(prompt("Tabungan hari 1:", "10000")) || 10000;
+            let hari2 = Number(prompt("Tabungan hari 2:", "15000")) || 15000;
+            let hari3 = Number(prompt("Tabungan hari 3:", "20000")) || 20000;
+
+            let totalTabungan = uangAwal + hari1 + hari2 + hari3;
+
+            console.log(totalTabungan);
+
+            let output = `--- KALKULATOR TABUNGAN ---\n` +
+                         `Uang Awal       : Rp ${uangAwal}\n` +
+                         `Hari Ke-1       : Rp ${hari1}\n` +
+                         `Hari Ke-2       : Rp ${hari2}\n` +
+                         `Hari Ke-3       : Rp ${hari3}\n` +
+                         `----------------------------\n` +
+                         `Total Tabungan  = Rp ${totalTabungan}`;
+
+            document.getElementById('out9').innerText = output;
+            document.getElementById('pic-out9').innerText = totalTabungan;
+        }
+    </script>
+</body>
+</html>
